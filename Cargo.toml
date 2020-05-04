@@ -1,0 +1,3 @@
+[workspace]
+members = ["ldm_service", "ldm_metrics", "ldm_notifications"]
+default-members = ["ldm_service"]

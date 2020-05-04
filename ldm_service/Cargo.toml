@@ -1,0 +1,12 @@
+[package]
+name = "ldm_service"
+version = "0.1.0"
+authors = ["Ahmet Reha SEKER <ahmetrehaseker@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[dependencies]
+log = "0.4"
+simplelog = "0.7.5"
+ldm_metrics = { path = "../ldm_metrics" }
+ldm_notifications = {path = "../ldm_notifications"}
