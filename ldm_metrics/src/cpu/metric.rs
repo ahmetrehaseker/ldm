@@ -51,7 +51,7 @@ impl Alarm for CpuUsedAlarm {
         60 * self.config.interval() as u32
     }
 
-    fn current_status(&self) -> &AlarmStatus {
+    fn previous_status(&self) -> &AlarmStatus {
         &self.previous_status
     }
 

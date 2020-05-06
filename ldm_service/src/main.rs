@@ -11,7 +11,6 @@ use ldm_metrics::core::config::{Alarm, AlarmStatus};
 use clokwerk::{Scheduler, Interval};
 use ldm_metrics::setup::setup_metrics;
 use std::borrow::BorrowMut;
-use std::alloc::dealloc;
 
 pub fn init_logger(conf: Vec<LogConfiguration>) {
     CombinedLogger::init(
@@ -53,14 +52,14 @@ fn checker(alarm: &mut Box<dyn Alarm>) {
         Ok(result) => {
             match result {
                 AlarmStatus::Ok => {
-                    match alarm.current_status() {
+                    match alarm.previous_status() {
                         AlarmStatus::Ok => { debug!("No change"); }
                         AlarmStatus::Alarm => { info!("State changed from Alarm to Ok"); }
                         AlarmStatus::NoData => { debug!("No change"); }
                     }
                 }
                 AlarmStatus::Alarm => {
-                    match alarm.current_status() {
+                    match alarm.previous_status() {
                         AlarmStatus::Ok => { info!("State changed from Ok to Alarm"); }
                         AlarmStatus::Alarm => { debug!("No change"); }
                         AlarmStatus::NoData => { debug!("No change"); }
@@ -68,7 +67,7 @@ fn checker(alarm: &mut Box<dyn Alarm>) {
                 }
                 AlarmStatus::NoData => {}
             }
-            alarm.current_status(result);
+            alarm.set_status(result);
         }
         Err(err) => { error!("Error occurred: {}", err) }
     }

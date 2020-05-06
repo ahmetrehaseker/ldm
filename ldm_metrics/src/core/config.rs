@@ -39,7 +39,7 @@ pub trait Alarm: Debug + Send + Sync {
     fn check_conditions(&self) -> Result<AlarmStatus, AlarmCheckError>;
     fn poll_metric(&mut self) -> Result<(), SampleCollectError>;
     fn get_period(&self) -> u32;
-    fn current_status(&self) -> &AlarmStatus;
+    fn previous_status(&self) -> &AlarmStatus;
     fn set_status(&mut self, status: AlarmStatus);
 }
 
