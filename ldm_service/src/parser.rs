@@ -6,6 +6,7 @@ use std::str::FromStr;
 use serde::export::fmt::Debug;
 use core::fmt;
 use serde::export::Formatter;
+use ldm_metrics::core::config::AlarmConfiguration;
 
 pub fn get_config(name: &str) -> Result<Config, std::io::Error> {
     let mut config_dir = match dirs::config_dir() {
@@ -38,51 +39,6 @@ impl fmt::Display for DeviceConf {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "Device : '{}' [{}]", self.name, self.ip)
     }
-}
-
-#[derive(Deserialize, Debug)]
-pub struct AlarmConfiguration {
-    message: String,
-    kind: String,
-    dimension: Option<String>,
-    conditions: Vec<ConditionConfiguration>,
-    interval: i32,
-    sample_size: i32,
-}
-
-#[derive(Deserialize, Debug)]
-pub struct ConditionConfiguration {
-    kind: ConditionKind,
-    value: f32,
-    method: CalculationMethod,
-}
-
-#[derive(Deserialize, Debug)]
-enum ConditionKind {
-    #[serde(rename = "g")]
-    Greater,
-    #[serde(rename = "ge")]
-    GreaterAndEqual,
-    #[serde(rename = "l")]
-    Lesser,
-    #[serde(rename = "le")]
-    LesserAndEqual,
-    #[serde(rename = "e")]
-    Equal,
-    #[serde(rename = "n")]
-    NotEqual,
-}
-
-#[derive(Deserialize, Debug)]
-pub enum CalculationMethod {
-    #[serde(rename = "sum")]
-    Sum,
-    #[serde(rename = "avg")]
-    Avg,
-    #[serde(rename = "max")]
-    Max,
-    #[serde(rename = "min")]
-    Min,
 }
 
 #[derive(Deserialize, Debug)]
