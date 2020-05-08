@@ -14,6 +14,7 @@ serde_derive = "1.0.106"
 dirs = "2.0.2"
 tokio = { version = "0.2.20", features = ["full", "macros"] }
 clokwerk = "0.3.0"
+signal-hook = "0.1.14"
 ldm_commons = { path = "../ldm_commons" }
 ldm_metrics = { path = "../ldm_metrics" }
 ldm_notifications = {path = "../ldm_notifications"}

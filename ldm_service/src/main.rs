@@ -1,21 +1,27 @@
 #[macro_use]
 extern crate log;
-extern crate simplelog;
 extern crate ldm_commons;
 extern crate ldm_metrics;
+extern crate ldm_notifications;
+extern crate simplelog;
 
-use std::time::Duration;
-use ldm_service::parser::{LogConfiguration, get_config};
+use signal_hook::{iterator::Signals, SIGTERM};
+
+use ldm_commons::AlarmSenderCommands;
+use ldm_metrics::collector::{IncomingMessage, MetricCollector};
+use ldm_notifications::sender::AlarmSender;
+use ldm_service::parser::{get_config, LogConfiguration};
 use simplelog::CombinedLogger;
-use ldm_metrics::core::config::{Alarm, AlarmStatus};
-use clokwerk::{Scheduler, Interval};
-use ldm_metrics::setup::setup_metrics;
-use std::borrow::BorrowMut;
+use std::sync::mpsc;
+use std::sync::mpsc::{Receiver, Sender};
 
 pub fn init_logger(conf: Vec<LogConfiguration>) {
     CombinedLogger::init(
-        conf.iter().map(|c| c.get_logger().expect("Logger must be valid")).collect()
-    ).unwrap();
+        conf.iter()
+            .map(|c| c.get_logger().expect("Logger must be valid"))
+            .collect(),
+    )
+    .unwrap();
 }
 
 #[tokio::main]
@@ -28,47 +34,29 @@ async fn main() {
         }
     };
     init_logger(config.logs);
+    let (notification_tx, notification_rx): (
+        Sender<AlarmSenderCommands>,
+        Receiver<AlarmSenderCommands>,
+    ) = mpsc::channel();
+    let mut metric_collector = MetricCollector::new(notification_tx.clone(), config.alarms);
+    let (tx, rx): (Sender<IncomingMessage>, Receiver<IncomingMessage>) = mpsc::channel();
+    std::thread::spawn(move || metric_collector.start(rx));
+    let mut alarm_sender = AlarmSender::new(notification_rx, config.notifications);
+    std::thread::spawn(move || alarm_sender.start());
     info!("Setup complete for {}", config.device);
-    let alarms = match setup_metrics(config.alarms) {
-        Ok(alarms) => { alarms }
-        Err(err) => { panic!("Error occurred while constructing alarms {}", err) }
-    };
-
-    let mut scheduler = Scheduler::new();
-    for mut alarm in alarms {
-        info!("{:?}", alarm);
-        scheduler.every(Interval::Minutes(alarm.get_period())).run(move || checker(alarm.borrow_mut()));
-    }
-    let handle = scheduler.watch_thread(Duration::from_secs(5));
-    std::thread::sleep(Duration::from_secs(60 * 7));
-    handle.stop()
-}
-
-fn checker(alarm: &mut Box<dyn Alarm>) {
-    if let Err(e) = alarm.poll_metric() {
-        error!("Error occurred while gathering data : {}", e)
-    }
-    match alarm.check_conditions() {
-        Ok(result) => {
-            match result {
-                AlarmStatus::Ok => {
-                    match alarm.previous_status() {
-                        AlarmStatus::Ok => { debug!("No change"); }
-                        AlarmStatus::Alarm => { info!("State changed from Alarm to Ok"); }
-                        AlarmStatus::NoData => { debug!("No change"); }
-                    }
+    match Signals::new(&[SIGTERM]) {
+        Ok(signals) => {
+            for sig in signals.wait() {
+                if sig == SIGTERM {
+                    tx.send(IncomingMessage::Stop);
+                    notification_tx.send(AlarmSenderCommands::Stop);
                 }
-                AlarmStatus::Alarm => {
-                    match alarm.previous_status() {
-                        AlarmStatus::Ok => { info!("State changed from Ok to Alarm"); }
-                        AlarmStatus::Alarm => { debug!("No change"); }
-                        AlarmStatus::NoData => { debug!("No change"); }
-                    }
-                }
-                AlarmStatus::NoData => {}
             }
-            alarm.set_status(result);
         }
-        Err(err) => { error!("Error occurred: {}", err) }
+        Err(err) => {
+            error!("Error occurred while listening signals, closing : {}", err);
+            tx.send(IncomingMessage::Stop);
+            notification_tx.send(AlarmSenderCommands::Stop);
+        }
     }
 }

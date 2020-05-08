@@ -1,6 +1,6 @@
-use serde_derive::Deserialize;
 use core::fmt;
-use serde::export::fmt::Debug;
+use serde_derive::Deserialize;
+use std::fmt::Debug;
 
 pub struct Error {
     message: String,
@@ -21,7 +21,9 @@ impl fmt::Display for Error {
 // The Error trait is not available in libcore
 #[cfg(feature = "std")]
 impl error::Error for Error {
-    fn description(&self) -> &str { self.message.as_str() }
+    fn description(&self) -> &str {
+        self.message.as_str()
+    }
 }
 
 pub type AlarmCheckError = Error;
@@ -41,9 +43,10 @@ pub trait Alarm: Debug + Send + Sync {
     fn get_period(&self) -> u32;
     fn previous_status(&self) -> &AlarmStatus;
     fn set_status(&mut self, status: AlarmStatus);
+    fn get_message(&self) -> String;
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct AlarmConfiguration {
     message: String,
     kind: String,
@@ -54,16 +57,27 @@ pub struct AlarmConfiguration {
 }
 
 impl AlarmConfiguration {
-    pub fn sample_size(&self) -> usize { self.sample_size }
-    pub fn interval(&self) -> u64 { self.interval }
-    pub fn kind(&self) -> &str { self.kind.as_str() }
-    pub fn dimension(&self) -> &Option<String> { &self.dimension }
-    pub fn message(&self) -> &str { self.message.as_str() }
-    pub fn conditions(&self) -> &Vec<ConditionConfiguration> { &self.conditions }
+    pub fn sample_size(&self) -> usize {
+        self.sample_size
+    }
+    pub fn interval(&self) -> u64 {
+        self.interval
+    }
+    pub fn kind(&self) -> &str {
+        self.kind.as_str()
+    }
+    pub fn dimension(&self) -> &Option<String> {
+        &self.dimension
+    }
+    pub fn message(&self) -> &str {
+        self.message.as_str()
+    }
+    pub fn conditions(&self) -> &Vec<ConditionConfiguration> {
+        &self.conditions
+    }
 }
 
-
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct ConditionConfiguration {
     comparison: Comparison,
     value: f32,
@@ -71,9 +85,15 @@ pub struct ConditionConfiguration {
 }
 
 impl ConditionConfiguration {
-    pub fn comparison(&self) -> &Comparison { &self.comparison }
-    pub fn value(&self) -> f32 { self.value }
-    pub fn method(&self) -> &CalculationMethod { &self.method }
+    pub fn comparison(&self) -> &Comparison {
+        &self.comparison
+    }
+    pub fn value(&self) -> f32 {
+        self.value
+    }
+    pub fn method(&self) -> &CalculationMethod {
+        &self.method
+    }
 }
 
 impl ConditionConfiguration {
@@ -83,7 +103,7 @@ impl ConditionConfiguration {
     }
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub enum Comparison {
     #[serde(rename = "g")]
     Greater,
@@ -102,17 +122,17 @@ pub enum Comparison {
 impl Comparison {
     fn compare(&self, actual: f32, expected: f32) -> bool {
         match self {
-            Comparison::Greater => { actual > expected }
-            Comparison::GreaterAndEqual => { actual >= expected }
-            Comparison::Lesser => { actual < expected }
-            Comparison::LesserAndEqual => { actual <= expected }
-            Comparison::Equal => { actual == expected }
-            Comparison::NotEqual => { actual != expected }
+            Comparison::Greater => actual > expected,
+            Comparison::GreaterAndEqual => actual >= expected,
+            Comparison::Lesser => actual < expected,
+            Comparison::LesserAndEqual => actual <= expected,
+            Comparison::Equal => actual == expected,
+            Comparison::NotEqual => actual != expected,
         }
     }
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub enum CalculationMethod {
     #[serde(rename = "sum")]
     Sum,
@@ -127,10 +147,18 @@ pub enum CalculationMethod {
 impl CalculationMethod {
     fn calculate(&self, data_set: &Vec<f32>) -> f32 {
         match self {
-            CalculationMethod::Sum => { data_set.iter().sum::<f32>() }
-            CalculationMethod::Max => { data_set.iter().max_by(|a, b| a.partial_cmp(b).unwrap()).unwrap().clone() }
-            CalculationMethod::Min => { data_set.iter().min_by(|a, b| a.partial_cmp(b).unwrap()).unwrap().clone() }
-            CalculationMethod::Avg => { data_set.iter().sum::<f32>() / data_set.len() as f32 }
+            CalculationMethod::Sum => data_set.iter().sum::<f32>(),
+            CalculationMethod::Max => data_set
+                .iter()
+                .max_by(|a, b| a.partial_cmp(b).unwrap())
+                .unwrap()
+                .clone(),
+            CalculationMethod::Min => data_set
+                .iter()
+                .min_by(|a, b| a.partial_cmp(b).unwrap())
+                .unwrap()
+                .clone(),
+            CalculationMethod::Avg => data_set.iter().sum::<f32>() / data_set.len() as f32,
         }
     }
 }
