@@ -1,5 +1,12 @@
+pub mod core;
 pub mod opsgenie;
+pub mod sender;
+pub mod setup;
 pub mod slack;
+
+#[macro_use]
+extern crate log;
+extern crate simplelog;
 
 #[cfg(test)]
 mod tests {

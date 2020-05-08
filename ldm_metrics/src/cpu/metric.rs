@@ -1,5 +1,7 @@
-use crate::core::config::{AlarmConfiguration, Alarm, AlarmCheckError, SampleCollectError, AlarmStatus};
-use systemstat::{System, Platform, Duration};
+use crate::core::config::{
+    Alarm, AlarmCheckError, AlarmConfiguration, AlarmStatus, SampleCollectError,
+};
+use systemstat::{Duration, Platform, System};
 
 #[derive(Debug)]
 pub struct CpuUsedAlarm {
@@ -10,20 +12,26 @@ pub struct CpuUsedAlarm {
 
 impl CpuUsedAlarm {
     pub fn new(config: AlarmConfiguration) -> CpuUsedAlarm {
-        CpuUsedAlarm { config, samples: vec![], previous_status: AlarmStatus::NoData }
+        CpuUsedAlarm {
+            config,
+            samples: vec![],
+            previous_status: AlarmStatus::NoData,
+        }
     }
 }
 
 impl Alarm for CpuUsedAlarm {
     fn check_conditions(&self) -> Result<AlarmStatus, AlarmCheckError> {
-        if self.samples.len() < self.config.sample_size() { return Ok(AlarmStatus::NoData); }
+        if self.samples.len() < self.config.sample_size() {
+            return Ok(AlarmStatus::NoData);
+        }
         let mut res = true;
         for cond in self.config.conditions() {
             res = res & cond.check_condition(&self.samples);
         }
         Ok(match res {
             true => AlarmStatus::Ok,
-            false => AlarmStatus::Alarm
+            false => AlarmStatus::Alarm,
         })
     }
 
@@ -41,7 +49,10 @@ impl Alarm for CpuUsedAlarm {
                 self.samples.push(load.user)
             }
             Err(err) => {
-                error!("Error: {}", err)
+                return Err(SampleCollectError::new(format!(
+                    "Error while gathering info for Cpu: {}",
+                    err
+                )))
             }
         }
         Ok(())
@@ -58,6 +69,8 @@ impl Alarm for CpuUsedAlarm {
     fn set_status(&mut self, status: AlarmStatus) {
         self.previous_status = status;
     }
+
+    fn get_message(&self) -> String {
+        String::from(self.config.message())
+    }
 }
-
-
