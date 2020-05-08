@@ -10,6 +10,6 @@ slack = "0.23.0"
 serde = "1.0.106"
 serde_derive = "1.0.106"
 log = "0.4"
-simplelog = "0.7.5"
+log4rs = "0.12.0"
 opsgenie-rs = {path = "../opsgenie-rs"}
 ldm_commons = {path = "../ldm_commons"}

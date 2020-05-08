@@ -3,37 +3,34 @@ extern crate log;
 extern crate ldm_commons;
 extern crate ldm_metrics;
 extern crate ldm_notifications;
-extern crate simplelog;
 
 use signal_hook::{iterator::Signals, SIGTERM};
 
 use ldm_commons::AlarmSenderCommands;
 use ldm_metrics::collector::{IncomingMessage, MetricCollector};
 use ldm_notifications::sender::AlarmSender;
-use ldm_service::parser::{get_config, LogConfiguration};
-use simplelog::CombinedLogger;
+use ldm_service::parser::{get_config, get_config_dir};
+use std::io::Error;
+use std::path::PathBuf;
 use std::sync::mpsc;
 use std::sync::mpsc::{Receiver, Sender};
 
-pub fn init_logger(conf: Vec<LogConfiguration>) {
-    CombinedLogger::init(
-        conf.iter()
-            .map(|c| c.get_logger().expect("Logger must be valid"))
-            .collect(),
-    )
-    .unwrap();
-}
-
 #[tokio::main]
 async fn main() {
-    // init_logger();
+    match get_config_dir() {
+        Ok(mut path) => {
+            path.push("log4rs.yaml");
+            log4rs::init_file(path, Default::default()).unwrap();
+        }
+        Err(err) => panic!("Error while reading log conf: {}", err),
+    }
+
     let config = match get_config("ldm/config.toml") {
         Ok(config) => config,
         Err(err) => {
             panic!("Error occurred while gating config.toml, {}", err);
         }
     };
-    init_logger(config.logs);
     let (notification_tx, notification_rx): (
         Sender<AlarmSenderCommands>,
         Receiver<AlarmSenderCommands>,

@@ -9,7 +9,6 @@ pub mod temp;
 
 #[macro_use]
 extern crate log;
-extern crate simplelog;
 
 #[cfg(test)]
 mod tests {
