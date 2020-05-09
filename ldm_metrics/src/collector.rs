@@ -3,7 +3,7 @@ use crate::cpu::metric::CpuUsedAlarm;
 use crate::disk::metric::DiskUsedAlarm;
 use crate::temp::metric::TemperatureAlarm;
 use clokwerk::{Interval, Scheduler};
-use ldm_commons::{AlarmSenderCommands, Notification};
+use ldm_commons::{AlarmSenderCommands, MetricConsumerCommands, Notification};
 use std::sync::mpsc::{Receiver, Sender};
 use std::time::Duration;
 
@@ -22,16 +22,19 @@ pub enum IncomingMessage {
 #[derive(Debug)]
 pub struct MetricCollector {
     notification_channel: Sender<AlarmSenderCommands>,
+    metric_channel: Sender<MetricConsumerCommands>,
     configurations: Vec<AlarmConfiguration>,
 }
 
 impl MetricCollector {
     pub fn new(
         notification_channel: Sender<AlarmSenderCommands>,
+        metric_channel: Sender<MetricConsumerCommands>,
         configurations: Vec<AlarmConfiguration>,
     ) -> MetricCollector {
         MetricCollector {
             notification_channel,
+            metric_channel,
             configurations,
         }
     }

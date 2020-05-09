@@ -17,4 +17,5 @@ clokwerk = "0.3.0"
 signal-hook = "0.1.14"
 ldm_commons = { path = "../ldm_commons" }
 ldm_metrics = { path = "../ldm_metrics" }
+metric_consumer = {path = "../metric_consumer"}
 ldm_notifications = {path = "../ldm_notifications"}

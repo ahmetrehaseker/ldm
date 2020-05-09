@@ -1,7 +1,6 @@
 pub mod core;
 pub mod opsgenie;
 pub mod sender;
-pub mod setup;
 pub mod slack;
 
 #[macro_use]

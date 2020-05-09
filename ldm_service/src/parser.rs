@@ -1,6 +1,7 @@
 use core::fmt;
 use ldm_metrics::core::config::AlarmConfiguration;
 use ldm_notifications::core::config::NotificationConfiguration;
+use metric_consumer::core::config::MetricConsumerConfiguration;
 use serde::export::fmt::Debug;
 use serde::export::Formatter;
 use serde_derive::Deserialize;
@@ -43,6 +44,7 @@ pub struct Config {
     pub device: DeviceConf,
     pub alarms: Vec<AlarmConfiguration>,
     pub notifications: Vec<NotificationConfiguration>,
+    pub consumers: Vec<MetricConsumerConfiguration>,
 }
 
 #[derive(Deserialize, Debug)]

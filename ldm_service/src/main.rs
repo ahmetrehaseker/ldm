@@ -6,10 +6,11 @@ extern crate ldm_notifications;
 
 use signal_hook::{iterator::Signals, SIGTERM};
 
-use ldm_commons::AlarmSenderCommands;
+use ldm_commons::{AlarmSenderCommands, MetricConsumerCommands};
 use ldm_metrics::collector::{IncomingMessage, MetricCollector};
 use ldm_notifications::sender::AlarmSender;
 use ldm_service::parser::{get_config, get_config_dir};
+use metric_consumer::consumer::MetricConsumer;
 use std::io::Error;
 use std::path::PathBuf;
 use std::sync::mpsc;
@@ -35,7 +36,14 @@ async fn main() {
         Sender<AlarmSenderCommands>,
         Receiver<AlarmSenderCommands>,
     ) = mpsc::channel();
-    let mut metric_collector = MetricCollector::new(notification_tx.clone(), config.alarms);
+    let (metric_tx, metric_rx): (
+        Sender<MetricConsumerCommands>,
+        Receiver<MetricConsumerCommands>,
+    ) = mpsc::channel();
+    let mut metric_consumer = MetricConsumer::new(metric_rx, config.consumers);
+    std::thread::spawn(move || metric_consumer.start());
+    let mut metric_collector =
+        MetricCollector::new(notification_tx.clone(), metric_tx.clone(), config.alarms);
     let (tx, rx): (Sender<IncomingMessage>, Receiver<IncomingMessage>) = mpsc::channel();
     std::thread::spawn(move || metric_collector.start(rx));
     let mut alarm_sender = AlarmSender::new(notification_rx, config.notifications);
@@ -47,6 +55,7 @@ async fn main() {
                 if sig == SIGTERM {
                     tx.send(IncomingMessage::Stop);
                     notification_tx.send(AlarmSenderCommands::Stop);
+                    metric_tx.send(MetricConsumerCommands::Stop);
                 }
             }
         }
@@ -54,6 +63,7 @@ async fn main() {
             error!("Error occurred while listening signals, closing : {}", err);
             tx.send(IncomingMessage::Stop);
             notification_tx.send(AlarmSenderCommands::Stop);
+            metric_tx.send(MetricConsumerCommands::Stop);
         }
     }
 }
