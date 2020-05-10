@@ -1,11 +1,17 @@
 #[derive(Debug, Clone)]
 pub struct Notification {
     pub message: String,
+    pub priority: String,
+    pub description: String,
 }
 
 impl Notification {
-    pub fn new(message: String) -> Notification {
-        Notification { message }
+    pub fn new(message: String, priority: String, description: String) -> Notification {
+        Notification {
+            message,
+            priority,
+            description,
+        }
     }
 }
 
@@ -16,16 +22,19 @@ pub enum AlarmSenderCommands {
 }
 
 #[derive(Debug, Clone)]
-pub struct Metric {}
+pub struct MetricData {
+    name: String,
+    value: f64,
+}
 
-impl Metric {
-    pub fn new() -> Metric {
-        Metric {}
+impl MetricData {
+    pub fn new(name: String, value: f64) -> MetricData {
+        MetricData { name, value }
     }
 }
 
 #[derive(Debug, Clone)]
 pub enum MetricConsumerCommands {
-    Send(Metric),
+    Send(MetricData),
     Stop,
 }

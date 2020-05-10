@@ -43,7 +43,7 @@ async fn main() {
     let mut metric_consumer = MetricConsumer::new(metric_rx, config.consumers);
     std::thread::spawn(move || metric_consumer.start());
     let mut metric_collector =
-        MetricCollector::new(notification_tx.clone(), metric_tx.clone(), config.alarms);
+        MetricCollector::new(notification_tx.clone(), metric_tx.clone(), config.metrics);
     let (tx, rx): (Sender<IncomingMessage>, Receiver<IncomingMessage>) = mpsc::channel();
     std::thread::spawn(move || metric_collector.start(rx));
     let mut alarm_sender = AlarmSender::new(notification_rx, config.notifications);

@@ -1,0 +1,189 @@
+[device]
+    name= "Mac"
+    ip = "192.168.1.48"
+
+[[metrics]]
+    name = "cpu::usage"
+    interval = 1
+    [[metrics.alarms]]
+        name = "Cpu Usage is high (>70)"
+        severity = "high"
+        sample_size = 5
+        [[metrics.alarms.conditions]]
+            comparison = "ge"
+            method = "avg"
+            value = 70.0
+
+[[metrics]]
+    name = "memory::usage"
+    interval = 1
+    [[metrics.alarms]]
+        name = "Memory Usage is too high (>90)"
+        severity = "high"
+        sample_size = 5
+        [[metrics.alarms.conditions]]
+            comparison = "ge"
+            method = "avg"
+            value = 90.0
+    [[metrics.alarms]]
+        name = "Memory Usage is high (>70)"
+        severity = "low"
+        sample_size = 5
+        [[metrics.alarms.conditions]]
+            comparison = "ge"
+            method = "avg"
+            value = 70.0
+
+[[metrics]]
+    name = "disk::usage"
+    dimension = "/"
+    interval = 1
+    [[metrics.alarms]]
+        name = "Main disk is nearly full (>90)"
+        severity = "high"
+        sample_size = 1
+        [[metrics.alarms.conditions]]
+            comparison = "ge"
+            method = "avg"
+            value = 90.0
+    [[metrics.alarms]]
+        name = "Main disk is close to full (>70)"
+        severity = "low"
+        sample_size = 1
+        [[metrics.alarms.conditions]]
+            comparison = "ge"
+            method = "avg"
+            value = 70.0
+
+#[[metrics]]
+#    name = "disk::usage"
+#    dimension = "/"
+#    interval = 1
+#    [[metrics.alarms]]
+#        name = "Main disk is nearly full (>90)"
+#        severity = "high"
+#        sample_size = 1
+#        [[alamrs.conditions]]
+#            comparison = "ge"
+#            method = "avg"
+#            value = "90"
+#    [[metrics.alarms]]
+#        name = "Main disk is close to full (>70)"
+#        severity = "low"
+#        sample_size = 1
+#        [[alamrs.conditions]]
+#            comparison = "ge"
+#            method = "avg"
+#            value = "70"
+
+[[metrics]]
+    name = "network::rx::usage"
+    dimension = "wlan0"
+    interval = 1
+    [[metrics.alarms]]
+        name = "Wireless Download is higher than expected(>150Kb/s)"
+        severity = "low"
+        sample_size = 5
+        [[metrics.alarms.conditions]]
+            comparison = "ge"
+            method = "avg"
+            value = 150.0
+
+[[metrics]]
+    name = "network::rx::total"
+    dimension = "wlan0"
+    interval = 1
+    [[metrics.alarms]]
+        name = "Wireless Download is higher than expected(>15Mb)"
+        severity = "low"
+        sample_size = 5
+        [[metrics.alarms.conditions]]
+            comparison = "ge"
+            method = "avg"
+            value = 15000.0
+
+[[metrics]]
+    name = "network::tx::usage"
+    dimension = "wlan0"
+    interval = 1
+    [[metrics.alarms]]
+        name = "Wireless Upload is higher than expected(>150Kb/s)"
+        severity = "low"
+        sample_size = 5
+        [[metrics.alarms.conditions]]
+            comparison = "ge"
+            method = "avg"
+            value = 150.0
+
+[[metrics]]
+    name = "network::tx::total"
+    dimension = "wlan0"
+    interval = 1
+    [[metrics.alarms]]
+        name = "Wireless upload is higher than expected(>15Mb)"
+        severity = "low"
+        sample_size = 5
+        [[metrics.alarms.conditions]]
+            comparison = "ge"
+            method = "avg"
+            value = 15000.0
+
+[[metrics]]
+    name = "temperature"
+    interval = 1
+    [[metrics.alarms]]
+        name = "Device temperature is higher than expected(>70c)"
+        severity = "high"
+        sample_size = 1
+        [[metrics.alarms.conditions]]
+            comparison = "ge"
+            method = "avg"
+            value = 70.0
+
+#[[metrics]]
+#    name = "process::memory"
+#    dimension = "kodi"
+#    interval = 1
+#    [[metrics.alarms]]
+#        name = "Kodi memory usage is high(>300Mb)"
+#        severity = "low"
+#        sample_size = 5
+#        [[metrics.alarms.conditions]]
+#            comparison = "ge"
+#            method = "avg"
+#            value = 300
+#
+#[[metrics]]
+#    name = "process::cpu"
+#    dimension = "kodi"
+#    interval = 1
+#    [[metrics.alarms]]
+#        name = "Kodi cpu usage is high(>50)"
+#        severity = "low"
+#        sample_size = 5
+#        [[metrics.alarms.conditions]]
+#            comparison = "ge"
+#            method = "avg"
+#            value = 50
+#
+#[[metrics]]
+#    name = "process::network"
+#    dimension = "kodi"
+#    interval = 1
+#    [[metrics.alarms]]
+#        name = "Kodi netowrk usage is high(>50)"
+#        severity = "low"
+#        sample_size = 5
+#        [[metrics.alarms.conditions]]
+#            comparison = "ge"
+#            method = "avg"
+#            value = 50
+
+[[notifications]]
+    kind = "opsgenie"
+    key = "569fe70a-2bb5-4688-a15a-34b1f37a13bc"
+
+[[consumers]]
+    kind = "file"
+    path = ""
+    rotation = 2

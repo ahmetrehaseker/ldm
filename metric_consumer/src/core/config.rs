@@ -1,5 +1,5 @@
 use crate::file::config::FileConsumerConfiguration;
-use ldm_commons::Metric;
+use ldm_commons::MetricData;
 use serde::Deserialize;
 use std::fmt::Debug;
 
@@ -11,5 +11,5 @@ pub enum MetricConsumerConfiguration {
 }
 
 pub trait Consumer: Debug + Send + Sync {
-    fn consume(&self, metric: Metric);
+    fn consume(&self, metric: MetricData);
 }

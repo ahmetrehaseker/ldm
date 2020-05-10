@@ -1,76 +1,47 @@
-use crate::core::config::{
-    Alarm, AlarmCheckError, AlarmConfiguration, AlarmStatus, SampleCollectError,
-};
+use crate::core::config::{Alarm, Metric, MetricConfiguration, SampleCollectError};
+use std::borrow::BorrowMut;
 use systemstat::{Duration, Platform, System};
 
 #[derive(Debug)]
-pub struct CpuUsedAlarm {
-    config: AlarmConfiguration,
-    samples: Vec<f32>,
-    previous_status: AlarmStatus,
+pub struct CpuUsageMetric {
+    interval: u64,
+    alarms: Vec<Alarm>,
 }
 
-impl CpuUsedAlarm {
-    pub fn new(config: AlarmConfiguration) -> CpuUsedAlarm {
-        CpuUsedAlarm {
-            config,
-            samples: vec![],
-            previous_status: AlarmStatus::NoData,
+impl CpuUsageMetric {
+    pub fn new(config: MetricConfiguration) -> CpuUsageMetric {
+        CpuUsageMetric {
+            interval: config.interval,
+            alarms: Alarm::from(config.alarms),
         }
     }
 }
 
-impl Alarm for CpuUsedAlarm {
-    fn check_conditions(&self) -> Result<AlarmStatus, AlarmCheckError> {
-        if self.samples.len() < self.config.sample_size() {
-            return Ok(AlarmStatus::NoData);
-        }
-        let mut res = true;
-        for cond in self.config.conditions() {
-            res = res & cond.check_condition(&self.samples);
-        }
-        Ok(match res {
-            true => AlarmStatus::Ok,
-            false => AlarmStatus::Alarm,
-        })
+impl Metric for CpuUsageMetric {
+    fn get_name(&self) -> String {
+        String::from("cpu::usage")
     }
 
-    fn poll_metric(&mut self) -> Result<(), SampleCollectError> {
+    fn poll_metric(&mut self) -> Result<f64, SampleCollectError> {
         let sys = System::new();
-
-        if self.samples.len() == self.config.sample_size() {
-            self.samples.remove(0);
-        }
-
         match sys.cpu_load_aggregate() {
             Ok(cpu) => {
                 std::thread::sleep(Duration::from_secs(1));
                 let load = cpu.done().unwrap();
-                self.samples.push(load.user)
+                Ok(load.user as f64)
             }
-            Err(err) => {
-                return Err(SampleCollectError::new(format!(
-                    "Error while gathering info for Cpu: {}",
-                    err
-                )))
-            }
+            Err(err) => Err(SampleCollectError::new(format!(
+                "Error while gathering info for Cpu: {}",
+                err
+            ))),
         }
-        Ok(())
+    }
+
+    fn get_alarms(&mut self) -> &mut [Alarm] {
+        self.alarms.borrow_mut()
     }
 
     fn get_period(&self) -> u32 {
-        60 * self.config.interval() as u32
-    }
-
-    fn previous_status(&self) -> &AlarmStatus {
-        &self.previous_status
-    }
-
-    fn set_status(&mut self, status: AlarmStatus) {
-        self.previous_status = status;
-    }
-
-    fn get_message(&self) -> String {
-        String::from(self.config.message())
+        (self.interval * 60) as u32
     }
 }

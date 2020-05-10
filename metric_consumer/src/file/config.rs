@@ -1,5 +1,5 @@
 use crate::core::config::Consumer;
-use ldm_commons::Metric;
+use ldm_commons::MetricData;
 use serde::Deserialize;
 
 #[derive(Deserialize, Debug)]
@@ -18,7 +18,7 @@ impl FileConsumer {
 }
 
 impl Consumer for FileConsumer {
-    fn consume(&self, metric: Metric) {
+    fn consume(&self, metric: MetricData) {
         unimplemented!()
     }
 }

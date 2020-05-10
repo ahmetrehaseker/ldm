@@ -30,29 +30,79 @@ pub type AlarmCheckError = Error;
 pub type SampleCollectError = Error;
 pub type CalculateError = Error;
 
-#[derive(Debug)]
-pub enum AlarmStatus {
-    Ok,
-    Alarm,
-    NoData,
+pub trait Metric: Debug + Send + Sync {
+    fn get_name(&self) -> String;
+    fn poll_metric(&mut self) -> Result<f64, SampleCollectError>;
+    fn get_alarms(&mut self) -> &mut [Alarm];
+    fn get_period(&self) -> u32;
 }
 
-pub trait Alarm: Debug + Send + Sync {
-    fn check_conditions(&self) -> Result<AlarmStatus, AlarmCheckError>;
-    fn poll_metric(&mut self) -> Result<(), SampleCollectError>;
-    fn get_period(&self) -> u32;
-    fn previous_status(&self) -> &AlarmStatus;
-    fn set_status(&mut self, status: AlarmStatus);
-    fn get_message(&self) -> String;
+// pub trait Alarm: Debug + Send + Sync {
+//     fn check_conditions(&self) -> Result<AlarmStatus, AlarmCheckError>;
+//     fn poll_metric(&mut self) -> Result<(), SampleCollectError>;
+//     fn get_period(&self) -> u32;
+//     fn previous_status(&self) -> &AlarmStatus;
+//     fn set_status(&mut self, status: AlarmStatus);
+//     fn get_message(&self) -> String;
+// }
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct Alarm {
+    pub config: AlarmConfiguration,
+    pub samples: Vec<f64>,
+    pub previous_status: AlarmStatus,
+}
+
+impl Alarm {
+    pub fn new(config: AlarmConfiguration) -> Alarm {
+        Alarm {
+            config,
+            samples: Vec::new(),
+            previous_status: AlarmStatus::NoData,
+        }
+    }
+
+    pub fn from(configs: Vec<AlarmConfiguration>) -> Vec<Alarm> {
+        configs.iter().map(|c| Alarm::new(c.clone())).collect()
+    }
+
+    pub fn check(&mut self, data: f64) -> Result<AlarmStatus, AlarmCheckError> {
+        if self.samples.len() == self.config.sample_size {
+            self.samples.remove(0);
+        }
+        self.samples.push(data);
+
+        if self.samples.len() < self.config.sample_size {
+            return Ok(AlarmStatus::NoData);
+        }
+        let mut res = true;
+        for cond in &self.config.conditions {
+            res = res & cond.check_condition(&self.samples);
+        }
+        Ok(match res {
+            true => AlarmStatus::Ok,
+            false => AlarmStatus::Alarm,
+        })
+    }
+
+    pub fn set_status(&mut self, status: AlarmStatus) {
+        self.previous_status = status;
+    }
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct MetricConfiguration {
+    pub name: String,
+    pub dimension: Option<String>,
+    pub alarms: Vec<AlarmConfiguration>,
+    pub interval: u64,
 }
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct AlarmConfiguration {
-    message: String,
-    kind: String,
-    dimension: Option<String>,
+    name: String,
+    severity: AlarmSeverity,
     conditions: Vec<ConditionConfiguration>,
-    interval: u64,
     sample_size: usize,
 }
 
@@ -60,17 +110,11 @@ impl AlarmConfiguration {
     pub fn sample_size(&self) -> usize {
         self.sample_size
     }
-    pub fn interval(&self) -> u64 {
-        self.interval
+    pub fn name(&self) -> String {
+        self.name.clone()
     }
-    pub fn kind(&self) -> &str {
-        self.kind.as_str()
-    }
-    pub fn dimension(&self) -> &Option<String> {
-        &self.dimension
-    }
-    pub fn message(&self) -> &str {
-        self.message.as_str()
+    pub fn severity(&self) -> String {
+        self.severity.get_name()
     }
     pub fn conditions(&self) -> &Vec<ConditionConfiguration> {
         &self.conditions
@@ -78,9 +122,33 @@ impl AlarmConfiguration {
 }
 
 #[derive(Deserialize, Debug, Clone)]
+pub enum AlarmStatus {
+    Ok,
+    Alarm,
+    NoData,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub enum AlarmSeverity {
+    #[serde(rename = "high")]
+    High,
+    #[serde(rename = "low")]
+    Low,
+}
+
+impl AlarmSeverity {
+    pub fn get_name(&self) -> String {
+        match self {
+            AlarmSeverity::High => String::from("high"),
+            AlarmSeverity::Low => String::from("low"),
+        }
+    }
+}
+
+#[derive(Deserialize, Debug, Clone)]
 pub struct ConditionConfiguration {
     comparison: Comparison,
-    value: f32,
+    value: f64,
     method: CalculationMethod,
 }
 
@@ -88,7 +156,7 @@ impl ConditionConfiguration {
     pub fn comparison(&self) -> &Comparison {
         &self.comparison
     }
-    pub fn value(&self) -> f32 {
+    pub fn value(&self) -> f64 {
         self.value
     }
     pub fn method(&self) -> &CalculationMethod {
@@ -97,7 +165,7 @@ impl ConditionConfiguration {
 }
 
 impl ConditionConfiguration {
-    pub fn check_condition(&self, data_set: &Vec<f32>) -> bool {
+    pub fn check_condition(&self, data_set: &Vec<f64>) -> bool {
         let actual_data = self.method.calculate(data_set);
         self.comparison.compare(actual_data, self.value)
     }
@@ -120,7 +188,7 @@ pub enum Comparison {
 }
 
 impl Comparison {
-    fn compare(&self, actual: f32, expected: f32) -> bool {
+    fn compare(&self, actual: f64, expected: f64) -> bool {
         match self {
             Comparison::Greater => actual > expected,
             Comparison::GreaterAndEqual => actual >= expected,
@@ -145,9 +213,9 @@ pub enum CalculationMethod {
 }
 
 impl CalculationMethod {
-    fn calculate(&self, data_set: &Vec<f32>) -> f32 {
+    fn calculate(&self, data_set: &Vec<f64>) -> f64 {
         match self {
-            CalculationMethod::Sum => data_set.iter().sum::<f32>(),
+            CalculationMethod::Sum => data_set.iter().sum::<f64>(),
             CalculationMethod::Max => data_set
                 .iter()
                 .max_by(|a, b| a.partial_cmp(b).unwrap())
@@ -158,7 +226,7 @@ impl CalculationMethod {
                 .min_by(|a, b| a.partial_cmp(b).unwrap())
                 .unwrap()
                 .clone(),
-            CalculationMethod::Avg => data_set.iter().sum::<f32>() / data_set.len() as f32,
+            CalculationMethod::Avg => data_set.iter().sum::<f64>() / data_set.len() as f64,
         }
     }
 }

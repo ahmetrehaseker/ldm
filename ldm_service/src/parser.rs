@@ -1,5 +1,5 @@
 use core::fmt;
-use ldm_metrics::core::config::AlarmConfiguration;
+use ldm_metrics::core::config::{AlarmConfiguration, MetricConfiguration};
 use ldm_notifications::core::config::NotificationConfiguration;
 use metric_consumer::core::config::MetricConsumerConfiguration;
 use serde::export::fmt::Debug;
@@ -11,7 +11,7 @@ use std::path::PathBuf;
 use std::str::FromStr;
 
 pub fn get_config_dir() -> Result<PathBuf, std::io::Error> {
-    let mut config_dir = match dirs::config_dir() {
+    let mut config_dir = match get_config_home() {
         None => {
             return Err(Error::from(ErrorKind::NotFound));
         }
@@ -23,7 +23,7 @@ pub fn get_config_dir() -> Result<PathBuf, std::io::Error> {
 }
 
 pub fn get_config(name: &str) -> Result<Config, std::io::Error> {
-    let mut config_dir = match dirs::config_dir() {
+    let mut config_dir = match get_config_home() {
         None => {
             return Err(Error::from(ErrorKind::NotFound));
         }
@@ -39,10 +39,34 @@ pub fn get_config(name: &str) -> Result<Config, std::io::Error> {
     return Ok(config);
 }
 
+#[cfg(debug_assertions)]
+fn get_config_home() -> Option<PathBuf> {
+    match std::env::current_dir() {
+        Ok(mut path) => {
+            path.push("config/");
+            Some(path)
+        }
+        Err(err) => None,
+    }
+}
+
+#[cfg(not(debug_assertions))]
+fn get_config_home() -> Option<PathBuf> {
+    let mut config_dir = match get_config_home() {
+        None => {
+            return Err(Error::from(ErrorKind::NotFound));
+        }
+        Some(dir) => dir,
+    };
+
+    config_dir.push("ldm/");
+    Ok(config_dir.clone())
+}
+
 #[derive(Deserialize, Debug)]
 pub struct Config {
     pub device: DeviceConf,
-    pub alarms: Vec<AlarmConfiguration>,
+    pub metrics: Vec<MetricConfiguration>,
     pub notifications: Vec<NotificationConfiguration>,
     pub consumers: Vec<MetricConsumerConfiguration>,
 }
