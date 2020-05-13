@@ -1,7 +1,6 @@
+pub mod consumer;
 pub mod core;
-pub mod opsgenie;
-pub mod sender;
-pub mod slack;
+pub mod file;
 
 #[macro_use]
 extern crate log;

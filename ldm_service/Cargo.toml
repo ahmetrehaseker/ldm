@@ -7,6 +7,15 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
 log = "0.4"
-simplelog = "0.7.5"
+log4rs = "0.12.0"
+toml = "0.5.6"
+serde = "1.0.106"
+serde_derive = "1.0.106"
+dirs = "2.0.2"
+tokio = { version = "0.2.20", features = ["full", "macros"] }
+clokwerk = "0.3.0"
+signal-hook = "0.1.14"
+ldm_commons = { path = "../ldm_commons" }
 ldm_metrics = { path = "../ldm_metrics" }
+metric_consumer = {path = "../metric_consumer"}
 ldm_notifications = {path = "../ldm_notifications"}

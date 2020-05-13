@@ -1,10 +1,4 @@
-pub mod core;
-pub mod opsgenie;
-pub mod sender;
-pub mod slack;
-
-#[macro_use]
-extern crate log;
+pub mod alert;
 
 #[cfg(test)]
 mod tests {

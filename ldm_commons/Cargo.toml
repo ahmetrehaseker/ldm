@@ -1,15 +1,15 @@
 [package]
-name = "ldm_notifications"
+name = "ldm_commons"
 version = "0.1.0"
 authors = ["Ahmet Reha SEKER <ahmetrehaseker@gmail.com>"]
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
 [dependencies]
-slack = "0.23.0"
-serde = "1.0.106"
-serde_derive = "1.0.106"
 log = "0.4"
 log4rs = "0.12.0"
-opsgenie-rs = {path = "../opsgenie-rs"}
-ldm_commons = {path = "../ldm_commons"}
+toml = "0.5.6"
+serde = "1.0.106"
+serde_derive = "1.0.106"
+dirs = "2.0.2"
